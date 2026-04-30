@@ -97,3 +97,34 @@ full_inhaler_df <- full_inhaler_df %>% select(!(X1:X8))
 inhalers_grouped <- full_inhaler_df %>%
   group_by(bnf_code, row_id, row_name) %>%
   summarise(total_cost = sum(actual_cost), total_items = sum(items), total_quantity = sum(quantity))
+
+
+#################################################################
+######### FORGET ALL THE ABOVE
+################################################################
+
+# Load in numbered prescription sheets
+
+numbers <- c(1:48)
+
+all_prescriptions <- lapply(1:length(numbers), function(i){
+  df <- read_csv(paste0('Data/Prescriptions/spending-by-practice-0301-0302-0303 (', numbers[i], ').csv'))
+})
+
+all_prescriptions <- do.call('rbind', all_prescriptions)
+
+all_prescriptions$date <- lubridate::as_date(all_prescriptions$date)
+
+all_prescriptions <- all_prescriptions %>%
+  mutate(year = case_when((date >= '2021-04-01') & (date < '2022-04-01') ~ '2022',
+                        (date >= '2022-04-01' & date < '2023-04-01') ~ '2023',
+                        (date >= '2023-04-01' & date < '2024-04-01') ~ '2024',
+                        (date >= '2024-04-01' & date < '2025-04-01') ~ '2025'))
+
+
+prescriptions_grouped <- all_prescriptions %>%
+  group_by(row_id, year) %>%
+  summarise(cost = sum(actual_cost), items = sum(items), quantity = sum(quantity)) %>%
+  rename(PRACTICE_CODE = row_id)
+
+write.csv(prescriptions_grouped, 'Data/Prescriptions/all_prescriptions_grouped.csv')
